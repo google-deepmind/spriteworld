@@ -46,22 +46,17 @@ to their color (each color is associated with a different goal location).
 
 ## Installation
 
-Spriteworld can be installed from PyPI using `pip`:
+Spriteworld can be installed using `pip`:
 
 ```bash
-pip install spriteworld
-```
-
-You can also install it directly from our GitHub repository using `pip`:
-
-```bash
-pip install git+git://github.com/deepmind/spriteworld.git
+pip install git+https://github.com/deepmind/spriteworld.git
 ```
 
 or alternatively by checking out a local copy of our repository and running:
 
 ```bash
-pip install /path/to/local/spriteworld/
+git clone https://github.com/deepmind/spriteworld.git
+pip install spriteworld/
 ```
 
 ## Getting Started
