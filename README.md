@@ -64,9 +64,7 @@ pip install spriteworld/
 #### Prerequisites
 
 Spriteworld depends on `numpy`, `six`, `absl`, `PIL`, `matplotlib`, `sklearn`,
-and `dm_env`. Most of these are standard python libraries except `dm_env`, which
-may be imported from
-[https://github.com/deepmind/dm_env](https://github.com/deepmind/dm_env).
+and `dm_env`.
 
 #### Running The Demo
 
