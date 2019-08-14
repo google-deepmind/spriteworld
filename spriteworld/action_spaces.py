@@ -140,7 +140,7 @@ class DragAndDrop(SelectMove):
 class Embodied(object):
   """Embodied-Grid action space.
 
-  This action space treats sprites[-1] (the foreground sprite) as ab agent's
+  This action space treats sprites[-1] (the foreground sprite) as the agent's
   body.
 
   The action space has two components. The first is a binary `Carry/Don't Carry`
@@ -169,9 +169,17 @@ class Embodied(object):
         3: np.array([self._step_size, 0]),
     }
 
+  def get_body_sprite(self, sprites):
+    """Return the sprite representing the agent's body."""
+    return sprites[-1]
+
+  def get_non_body_sprites(self, sprites):
+    """Return all sprites except that representing the agent's body."""
+    return sprites[:-1]
+
   def get_carried_sprite(self, sprites):
-    body_position = sprites[-1].position
-    for sprite in sprites[:-1][::-1]:
+    body_position = self.get_body_sprite(sprites).position
+    for sprite in self.get_non_body_sprites(sprites)[::-1]:
       if sprite.contains_point(body_position):
         return sprite
     return None
@@ -201,7 +209,7 @@ class Embodied(object):
         carried_sprite.move(motion, keep_in_frame=keep_in_frame)
 
     # Move agent body
-    sprites[-1].move(motion, keep_in_frame=keep_in_frame)
+    self.get_body_sprite(sprites).move(motion, keep_in_frame=keep_in_frame)
 
     return -self._motion_cost * self._step_size
 
