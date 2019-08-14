@@ -29,6 +29,7 @@ from __future__ import division
 from __future__ import print_function
 
 import itertools
+import os
 import numpy as np
 from spriteworld import factor_distributions as distribs
 from spriteworld import sprite_generators
@@ -127,6 +128,10 @@ def get_config(mode='train'):
       'renderers': common.renderers(),
       'init_sprites': sprite_gen,
       'max_episode_length': MAX_EPISODE_LENGTH,
+      'metadata': {
+          'name': os.path.basename(__file__),
+          'mode': mode
+      }
   }
 
   return config

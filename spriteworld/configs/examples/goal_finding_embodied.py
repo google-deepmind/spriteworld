@@ -25,6 +25,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import numpy as np
 from spriteworld import action_spaces
 from spriteworld import factor_distributions as distribs
@@ -109,5 +110,9 @@ def get_config(mode=None):
       'renderers': renderers,
       'init_sprites': sprite_gen,
       'max_episode_length': 50,
+      'metadata': {
+          'name': os.path.basename(__file__),
+          'mode': mode
+      }
   }
   return config

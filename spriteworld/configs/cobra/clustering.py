@@ -27,6 +27,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 from spriteworld import factor_distributions as distribs
 from spriteworld import sprite_generators
 from spriteworld import tasks
@@ -101,5 +102,9 @@ def get_config(mode='train'):
       'renderers': common.renderers(),
       'init_sprites': sprite_gen,
       'max_episode_length': MAX_EPISODE_LENGTH,
+      'metadata': {
+          'name': os.path.basename(__file__),
+          'mode': mode
+      }
   }
   return config

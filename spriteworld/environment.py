@@ -37,7 +37,8 @@ class Environment(dm_env.Environment):
                renderers,
                init_sprites,
                keep_in_frame=True,
-               max_episode_length=1000):
+               max_episode_length=1000,
+               metadata=None):
     """Construct Spriteworld environment.
 
     Args:
@@ -56,6 +57,7 @@ class Environment(dm_env.Environment):
         sprite out of frame.
       max_episode_length: Maximum number of steps beyond which episode will be
         terminated.
+      metadata: Optional object to be added to the global_state.
     """
     self._task = task
     self._action_space = action_space
@@ -67,6 +69,7 @@ class Environment(dm_env.Environment):
     self._step_count = 0
     self._reset_next_step = True
     self._renderers_initialized = False
+    self._metadata = metadata
 
   def reset(self):
     self._sprites = self._init_sprites()
@@ -123,7 +126,11 @@ class Environment(dm_env.Environment):
     return sprite.sample_contained_position()
 
   def state(self):
-    global_state = {'success': self.success()}
+    global_state = {
+        'success': self.success(),
+    }
+    if self._metadata:
+      global_state['metadata'] = self._metadata
     return {'sprites': self._sprites, 'global_state': global_state}
 
   def observation(self):
