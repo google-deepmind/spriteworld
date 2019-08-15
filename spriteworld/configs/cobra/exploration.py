@@ -44,6 +44,8 @@ def get_config(mode=None):
     config: Dictionary defining task/environment configuration. Can be fed as
       kwargs to environment.Environment.
   """
+  del mode  # No train/test split for pure exploration
+
   factors = distribs.Product([
       distribs.Continuous('x', 0.1, 0.9),
       distribs.Continuous('y', 0.1, 0.9),
@@ -65,8 +67,7 @@ def get_config(mode=None):
       'init_sprites': sprite_gen,
       'max_episode_length': 10,
       'metadata': {
-          'name': os.path.basename(__file__),
-          'mode': mode,
+          'name': os.path.basename(__file__)
       }
   }
   return config

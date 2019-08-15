@@ -21,24 +21,26 @@ from __future__ import print_function
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import numpy as np
 
 from six.moves import range
 from spriteworld import environment
 from spriteworld.configs import cobra
+from spriteworld.configs import examples
 
 
 class ConfigsTest(parameterized.TestCase):
 
   @parameterized.parameters(
-      (cobra.clustering,),
-      (cobra.sorting,),
+      (cobra.exploration,),
       (cobra.goal_finding_more_distractors,),
       (cobra.goal_finding_more_targets,),
       (cobra.goal_finding_new_position,),
       (cobra.goal_finding_new_shape,),
+      (cobra.clustering,),
+      (cobra.sorting,),
+      (examples.goal_finding_embodied,),
   )
-  def testConfig(self, task_module, modes=('train', 'test'), replicas=5):
+  def testConfig(self, task_module, modes=('train', 'test'), replicas=3):
     for mode in modes:
       print(mode)
       for _ in range(replicas):
@@ -46,11 +48,11 @@ class ConfigsTest(parameterized.TestCase):
         config['renderers'] = {}
         env = environment.Environment(**config)
         env.observation_spec()
-        action = np.array([0.5, 0.5, 0.5, 0.5])
+        action = env.action_space.sample()
 
         num_episodes = 0
         step = env.reset()
-        while num_episodes < 10:
+        while num_episodes < 5:
           if step.first():
             num_episodes += 1
           step = env.step(action)
