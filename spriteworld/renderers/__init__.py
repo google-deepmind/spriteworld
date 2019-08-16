@@ -15,6 +15,7 @@
 # python2 python3
 """Expose renderer classes."""
 
+from spriteworld.renderers import color_maps
 from spriteworld.renderers.abstract_renderer import AbstractRenderer
 from spriteworld.renderers.handcrafted import SpriteFactors
 from spriteworld.renderers.handcrafted import SpritePassthrough

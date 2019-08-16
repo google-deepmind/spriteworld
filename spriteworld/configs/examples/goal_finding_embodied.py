@@ -32,7 +32,6 @@ from spriteworld import factor_distributions as distribs
 from spriteworld import renderers as spriteworld_renderers
 from spriteworld import sprite_generators
 from spriteworld import tasks
-from spriteworld.renderers import color_maps
 
 TERMINATE_DISTANCE = 0.075
 NUM_TARGETS = lambda: np.random.randint(1, 4)
@@ -101,7 +100,7 @@ def get_config(mode=None):
           spriteworld_renderers.PILRenderer(
               image_size=(64, 64),
               anti_aliasing=5,
-              color_to_rgb=color_maps.hsv_to_rgb)
+              color_to_rgb=spriteworld_renderers.color_maps.hsv_to_rgb)
   }
 
   config = {
