@@ -76,7 +76,8 @@ and `dm_env`.
 
 #### Running The Demo
 
-Once installed, you may familiarize yourself with Spriteworld through `demo.py`:
+Once installed, you may familiarize yourself with Spriteworld through
+`run_demo.py`:
 
 ```bash
 python /path/to/local/spriteworld/run_demo.py
@@ -85,7 +86,7 @@ python /path/to/local/spriteworld/run_demo.py
 This will run a cluster-by-color task with a drag-and-drop action space. There
 are a number of tasks specified in the `spriteworld/configs` directory, each of
 which can be run with the demo by modifying the `--config` flag. Note that some
-tasks (namely `spriteworld/configs/examples/goal_finding_embodied.py`) use an
+tasks (namely `spriteworld.configs.examples.goal_finding_embodied`) use an
 embodied agent instead of the drag-and-drop action space.
 
 #### Creating Your Own Task
