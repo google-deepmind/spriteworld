@@ -1,4 +1,3 @@
-# pylint: disable=g-bad-file-header
 # Copyright 2019 DeepMind Technologies Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,14 +13,9 @@
 # limitations under the License.
 # ============================================================================
 # python2 python3
-"""Demo GUI for Spriteworld task configs.
+"""Interactive GUI for Spriteworld.
 
-To play a task, run this on the task config:
-```bash
-python demo.py --config=$path_to_task_config$
-```
-
-Be aware that this demo overrides the action space and renderer for ease of
+Be aware that this UI overrides the action space and renderer for ease of
 playing, so those will be different from what are specified in the task config.
 """
 
@@ -29,11 +23,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import importlib
 import logging as log
 import sys
-from absl import app
-from absl import flags
 from absl import logging
 from matplotlib import gridspec
 import matplotlib.pylab as plt
@@ -42,18 +33,6 @@ import numpy as np
 from spriteworld import action_spaces
 from spriteworld import environment
 from spriteworld import renderers
-from spriteworld.renderers import color_maps
-
-FLAGS = flags.FLAGS
-flags.DEFINE_string('config', 'spriteworld.configs.cobra.clustering',
-                    'Module name of task config to use.')
-flags.DEFINE_string('mode', 'train', 'Task mode, "train" or "test"]')
-flags.DEFINE_boolean('task_hsv_colors', True,
-                     'Whether the task config uses HSV as color factors.')
-flags.DEFINE_integer('render_size', 256,
-                     'Height and width of the output image.')
-flags.DEFINE_integer('anti_aliasing', 10, 'Renderer anti-aliasing factor.')
-flags.DEFINE_integer('timeout', 600, 'Seconds of inactivity until timeout.')
 
 
 class DemoUI(object):
@@ -170,10 +149,11 @@ class DemoUI(object):
 class HumanDragAndDropAgent(object):
   """Demo agent for mouse-clicking interface with DragAndDrop action space."""
 
-  def __init__(self, action_space):
+  def __init__(self, action_space, timeout=600):
     self._action_space = action_space
     self._size = None
     self._click = None
+    self._timeout = timeout
 
   def help(self):
     logging.info('Click to select an object, then click again to select where '
@@ -200,10 +180,10 @@ class HumanDragAndDropAgent(object):
     def _get_click():
       """Get mouse click."""
       while True:
-        x = plt.waitforbuttonpress(timeout=FLAGS.timeout)
+        x = plt.waitforbuttonpress(timeout=self._timeout)
         if x is None:
           logging.info('Timed out. You took longer than %d seconds to click.',
-                       FLAGS.timeout)
+                       self._timeout)
           click = None
         elif x:
           logging.info('You pressed a key, but were supposed to click with the '
@@ -249,11 +229,12 @@ class HumanEmbodiedAgent(object):
       'd': 3
   }
 
-  def __init__(self, action_space):
+  def __init__(self, action_space, timeout=600):
     self._action_space = action_space
     self._key_press = None
     self._carry = False
     self._movement = None
+    self._timeout = timeout
 
   def help(self):
     logging.info('Use WASD/arrow keys to move, hold Space to carry.')
@@ -291,10 +272,10 @@ class HumanEmbodiedAgent(object):
       """Get key press."""
       ready = False
       while not ready:
-        x = plt.waitforbuttonpress(timeout=FLAGS.timeout)
+        x = plt.waitforbuttonpress(timeout=self._timeout)
         if x is None:
           logging.info('Timed out. You took longer than %d seconds to click.',
-                       FLAGS.timeout)
+                       self._timeout)
         elif not x:
           logging.info('You clicked, but you are supposed to use the Keyboard.')
           self.help()
@@ -313,46 +294,42 @@ class HumanEmbodiedAgent(object):
     return _get_action()
 
 
-def main(_):
-  config = importlib.import_module(FLAGS.config)
-  config = config.get_config(FLAGS.mode)
-  if isinstance(config['action_space'], action_spaces.SelectMove):
+def setup_run_ui(env_config, render_size, task_hsv_colors, anti_aliasing):
+  """Start a Demo UI given an env_config."""
+  if isinstance(env_config['action_space'], action_spaces.SelectMove):
     # DragAndDrop is a bit easier to demo than the SelectMove action space
-    config['action_space'] = action_spaces.DragAndDrop(scale=0.5)
-    agent = HumanDragAndDropAgent(config['action_space'])
-  elif isinstance(config['action_space'], action_spaces.Embodied):
-    agent = HumanEmbodiedAgent(config['action_space'])
+    env_config['action_space'] = action_spaces.DragAndDrop(scale=0.5)
+    agent = HumanDragAndDropAgent(env_config['action_space'])
+  elif isinstance(env_config['action_space'], action_spaces.Embodied):
+    agent = HumanEmbodiedAgent(env_config['action_space'])
   else:
     raise ValueError(
         'Demo is not configured to run with action space {}.'.format(
-            config['action_space']))
-  config['renderers'] = {
+            env_config['action_space']))
+  env_config['renderers'] = {
       'image':
           renderers.PILRenderer(
-              image_size=(FLAGS.render_size, FLAGS.render_size),
-              color_to_rgb=color_maps.hsv_to_rgb
-              if FLAGS.task_hsv_colors else None,
-              anti_aliasing=FLAGS.anti_aliasing),
+              image_size=(render_size, render_size),
+              color_to_rgb=renderers.color_maps.hsv_to_rgb
+              if task_hsv_colors else None,
+              anti_aliasing=anti_aliasing),
       'success':
           renderers.Success()
   }
-  env = environment.Environment(**config)
+  env = environment.Environment(**env_config)
   demo = DemoUI()
 
   for event_name, callback in agent.callbacks().items():
     demo.register_callback(event_name, callback)
 
+  # Start RL loop
   timestep = env.reset()
   demo.update(timestep, action=None)
 
   while True:
     action = agent.step(timestep)
     timestep = env.step(action)
-    if isinstance(config['action_space'], action_spaces.DragAndDrop):
+    if isinstance(env_config['action_space'], action_spaces.DragAndDrop):
       demo.update(timestep, action)
     else:
       demo.update(timestep, None)
-
-
-if __name__ == '__main__':
-  app.run(main)

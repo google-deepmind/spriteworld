@@ -79,7 +79,7 @@ and `dm_env`.
 Once installed, you may familiarize yourself with Spriteworld through `demo.py`:
 
 ```bash
-python /path/to/local/spriteworld/demo.py
+python /path/to/local/spriteworld/run_demo.py
 ```
 
 This will run a cluster-by-color task with a drag-and-drop action space. There
