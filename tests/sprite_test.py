@@ -51,29 +51,78 @@ class SpriteTest(parameterized.TestCase):
     self.assertSequenceAlmostEqual(s.position, final_position, delta=1e-6)
 
   @parameterized.parameters(
-      (0.5, 0.5, 'square', 0, 0.4,
-       [[False, False, False, False], [False, True, True, False],
-        [False, True, True, False], [False, False, False, False]]),
-      (0.5, 0.5, 'square', 25, 0.6,
-       [[False, False, True, False], [True, True, True, False],
-        [False, True, True, True], [False, True, False, False]]),
-      (0.6, 0.55, 'square', 25, 0.6,
-       [[False, False, False, False], [False, True, True, True],
-        [False, True, True, True], [False, True, True, False]]),
-      (0.6, 0.55, 'triangle', 0, 0.6,
-       [[False, True, False, False], [False, True, True, True],
-        [False, True, True, True], [False, True, True, False]]),
-      (0.45, 0.5, 'star_5', 25, 0.6,
-       [[False, True, False, False], [True, True, True, True],
-        [True, True, True, False], [True, False, True, False]]),
+      dict(
+          x=0.5,
+          y=0.5,
+          shape='square',
+          angle=0,
+          scale=0.5,
+          containment=[
+              [False, False, False, False],
+              [False, True, True, False],
+              [False, True, True, False],
+              [False, False, False, False],
+          ]),
+      dict(
+          x=0.5,
+          y=0.5,
+          shape='square',
+          angle=45,
+          scale=1,
+          containment=[
+              [False, True, True, False],
+              [True, True, True, True],
+              [True, True, True, True],
+              [False, True, True, False],
+          ]),
+      dict(
+          x=0.75,
+          y=0.75,
+          shape='square',
+          angle=0,
+          scale=0.5,
+          containment=[
+              [False, False, True, True],
+              [False, False, True, True],
+              [False, False, False, False],
+              [False, False, False, False],
+          ]),
+      dict(
+          x=0.65,
+          y=0.55,
+          shape='triangle',
+          angle=0,
+          scale=0.5,
+          containment=[
+              [False, False, True, False],
+              [False, False, True, False],
+              [False, True, True, True],
+              [False, False, False, False],
+          ]),
+      dict(
+          x=0.37,
+          y=0.55,
+          shape='star_5',
+          angle=0,
+          scale=0.6,
+          containment=[
+              [False, True, False, False],
+              [True, True, True, False],
+              [False, True, False, False],
+              [False, False, False, False],
+          ]),
   )
   def testContainsPoint(self, x, y, shape, angle, scale, containment):
-    linspace = np.linspace(0.2, 0.8, 4)
+    # As we use plots to prepare these tests, it's easier to write the matrix
+    # "in the wrong orientation" (i.e. with origin='lower') and flip it.
+    containment = np.flipud(containment)
+    linspace = np.linspace(0.1, 0.9, 4)
     grid = np.stack(np.meshgrid(linspace, linspace), axis=-1)
     s = sprite.Sprite(x=x, y=y, shape=shape, angle=angle, scale=scale)
-    eval_containment = [[s.contains_point(p) for p in row] for row in grid]  # pylint: disable=g-complex-comprehension
-    self.assertSequenceEqual(
-        list(np.ravel(eval_containment)), list(np.ravel(containment)))
+
+    eval_containment = np.array(
+        [[s.contains_point(p) for p in row] for row in grid])
+    self.assertTrue(np.allclose(eval_containment, containment))
 
   @parameterized.parameters(
       (0.5, 0.5, 'square', 0, 0.25),
@@ -87,31 +136,32 @@ class SpriteTest(parameterized.TestCase):
       self.assertTrue(s.contains_point(p))
 
   def testResetShape(self):
-    s = sprite.Sprite(angle=30, scale=0.25, shape='square')
-    square_vertices = [[0.653, 0.588], [0.412, 0.653], [0.347, 0.412],
-                       [0.588, 0.347]]
+    s = sprite.Sprite(scale=0.25, shape='square')
+    square_vertices = [[0.625, 0.625], [0.375, 0.625], [0.375, 0.375],
+                       [0.625, 0.375]]
     self.assertSequenceAlmostEqual(
         np.ravel(s.vertices), np.ravel(square_vertices), delta=1e-3)
 
     s.shape = 'triangle'
-    triangle_vertices = [[0.69, 0.61], [0.31, 0.61], [0.5, 0.281]]
+    triangle_vertices = [[0.5, 0.72], [0.31, 0.39], [0.69, 0.39]]
+
     self.assertSequenceAlmostEqual(
-        np.ravel(s.vertices), np.ravel(triangle_vertices), delta=1e-3)
+        np.ravel(s.vertices), np.ravel(triangle_vertices), delta=1e-2)
 
   def testResetAngle(self):
+    init_vertices = [[0.625, 0.625], [0.375, 0.625], [0.375, 0.375],
+                     [0.625, 0.375]]
     s = sprite.Sprite(angle=0, scale=0.25, shape='square')
-    init_vertices = [[0.677, 0.5], [0.5, 0.677], [0.323, 0.5], [0.5, 0.323]]
     self.assertSequenceAlmostEqual(
         np.ravel(s.vertices), np.ravel(init_vertices), delta=1e-3)
 
-    s.angle = 45
-    rotated_vertices = [[0.625, 0.625], [0.375, 0.625], [0.375, 0.375],
-                        [0.625, 0.375]]
+    s.angle = -45
+    rotated_vertices = [[0.677, 0.5], [0.5, 0.677], [0.323, 0.5], [0.5, 0.323]]
     self.assertSequenceAlmostEqual(
         np.ravel(s.vertices), np.ravel(rotated_vertices), delta=1e-3)
 
   def testResetScale(self):
-    s = sprite.Sprite(angle=45, scale=0.25, shape='square')
+    s = sprite.Sprite(scale=0.25, shape='square')
     init_vertices = [[0.625, 0.625], [0.375, 0.625], [0.375, 0.375],
                      [0.625, 0.375]]
     self.assertSequenceAlmostEqual(

@@ -55,20 +55,21 @@ class PilRendererTest(absltest.TestCase):
   def testOcclusion(self):
     renderer = pil_renderer.PILRenderer(image_size=(64, 64))
     image = renderer.render(self._get_sprites())
-    self.assertSequenceEqual(list(image[32, 44]), [255, 0, 0])
-    self.assertSequenceEqual(list(image[32, 47]), [0, 255, 0])
+    self.assertSequenceEqual(list(image[32, 32]), [255, 0, 0])
+    self.assertSequenceEqual(list(image[32, 50]), [0, 255, 0])
 
   def testAntiAliasing(self):
     renderer = pil_renderer.PILRenderer(image_size=(16, 16), anti_aliasing=5)
     image = renderer.render(self._get_sprites())
+
     self.assertSequenceEqual(list(image[4, 9]), [0, 0, 0])
+    self.assertSequenceEqual(list(image[6, 9]), [255, 0, 0])
     # Python2 and Python3 give slightly different anti-aliasing, so we specify
     # bounds for border values:
-    self.assertTrue(all(image[5, 9] >= [10, 11, 0]))
-    self.assertTrue(all(image[5, 9] <= [33, 23, 0]))
-    self.assertTrue(all(image[6, 9] >= [189, 34, 0]))
-    self.assertTrue(all(image[6, 9] <= [222, 42, 0]))
-    self.assertSequenceEqual(list(image[7, 9]), [255, 0, 0])
+    self.assertTrue(all(image[5, 9] >= [50, 0, 0]))
+    self.assertTrue(all(image[5, 9] <= [120, 30, 0]))
+    self.assertTrue(all(image[7, 9] >= [200, 0, 0]))
+    self.assertTrue(all(image[7, 9] <= [255, 50, 0]))
 
     renderer = pil_renderer.PILRenderer(image_size=(16, 16), anti_aliasing=1)
     image = renderer.render(self._get_sprites())

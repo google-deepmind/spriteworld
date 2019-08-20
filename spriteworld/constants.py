@@ -20,21 +20,22 @@ from __future__ import division
 from __future__ import print_function
 
 import enum
+import numpy as np
 from spriteworld import shapes
 
 # A selection of simple shapes
 SHAPES = {
-    'triangle': shapes.polygon(num_sides=3),
-    'square': shapes.polygon(num_sides=4),
-    'pentagon': shapes.polygon(num_sides=5),
+    'triangle': shapes.polygon(num_sides=3, theta_0=np.pi/2),
+    'square': shapes.polygon(num_sides=4, theta_0=np.pi/4),
+    'pentagon': shapes.polygon(num_sides=5, theta_0=np.pi/2),
     'hexagon': shapes.polygon(num_sides=6),
     'octagon': shapes.polygon(num_sides=8),
     'circle': shapes.polygon(num_sides=30),
-    'star_4': shapes.star(num_sides=4),
-    'star_5': shapes.star(num_sides=5),
+    'star_4': shapes.star(num_sides=4, theta_0=np.pi/4),
+    'star_5': shapes.star(num_sides=5, theta_0=np.pi + np.pi/10),
     'star_6': shapes.star(num_sides=6),
-    'spoke_4': shapes.spokes(num_sides=4),
-    'spoke_5': shapes.spokes(num_sides=5),
+    'spoke_4': shapes.spokes(num_sides=4, theta_0=np.pi/4),
+    'spoke_5': shapes.spokes(num_sides=5, theta_0=np.pi + np.pi/10),
     'spoke_6': shapes.spokes(num_sides=6),
 }
 
