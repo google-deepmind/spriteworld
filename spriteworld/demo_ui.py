@@ -57,13 +57,15 @@ class MatplotlibUI(object):
     self._ax_scalar.yaxis.set_ticks_position('left')
     self._setup_callbacks()
 
+  @property
+  def ax_image(self):
+    return self._ax_image
+
   def _setup_callbacks(self):
     """Default callbacks for the UI."""
 
     # Pressing escape should stop the UI
     def _onkeypress(event):
-      if not event.inaxes:
-        return
       if event.key == 'escape':
         # Stop UI
         logging.info('Pressed escape, stopping UI.')
@@ -85,15 +87,15 @@ class MatplotlibUI(object):
   def _draw_observation(self, image, action):
     """Draw the latest observation."""
     self._ax_image.clear()
-    self._ax_image.imshow(image, origin='lower', interpolation='none')
+    self._ax_image.imshow(image, interpolation='none')
     self._ax_image.set_xticks([])
     self._ax_image.set_yticks([])
     if action is not None:
-      size = image.shape[0]
       self._ax_image.annotate(
           '',
-          xy=action[:2] * size,  # Start of arrow
-          xytext=action[2:] * size,  # End of arrow
+          xycoords='axes fraction',
+          xy=action[:2],  # Start of arrow
+          xytext=action[2:],  # End of arrow
           arrowprops={
               'arrowstyle': '<|-',
               'color': 'red',
@@ -151,7 +153,6 @@ class HumanDragAndDropAgent(object):
 
   def __init__(self, action_space, timeout=600):
     self._action_space = action_space
-    self._size = None
     self._click = None
     self._timeout = timeout
 
@@ -159,50 +160,51 @@ class HumanDragAndDropAgent(object):
     logging.info('Click to select an object, then click again to select where '
                  'to move it.')
 
-  def callbacks(self):
-    """Get the matplotlib callbacks required by the agent."""
+  def register_callbacks(self, ui):
+    """Register the matplotlib callbacks required by the agent."""
 
     def _onclick(event):
-      x, y = event.xdata, event.ydata
-      self._click = (x, y)
+      if event.inaxes and event.inaxes == ui.ax_image:
+        # Map the click into axis-fraction positions (origin at bottom-left).
+        self._click = event.inaxes.transAxes.inverted().transform(
+            (event.x, event.y))
+      else:
+        self._click = None
       return
 
-    return {'button_press_event': _onclick}
+    ui.register_callback('button_press_event', _onclick)
 
   def begin_episode(self):
     logging.info('Starting episode')
 
   def step(self, timestep):
     """Take a step."""
-    if self._size is None:
-      self._size = timestep.observation['image'].shape[0]
+    del timestep  # Unused
 
     def _get_click():
       """Get mouse click."""
-      while True:
+      click = None
+      while click is None:
         x = plt.waitforbuttonpress(timeout=self._timeout)
         if x is None:
           logging.info('Timed out. You took longer than %d seconds to click.',
                        self._timeout)
-          click = None
         elif x:
           logging.info('You pressed a key, but were supposed to click with the '
                        'mouse.')
           self.help()
-          click = None
         else:
           click = self._click
-        return click
+      return click
 
     def _get_action():
       """Get action from user."""
       logging.info('Select sprite')
-      click_position = _get_click()
+      click_from = _get_click()
       logging.info('Select target')
-      click_motion = _get_click()
+      click_to = _get_click()
       try:
-        action = (1. / self._size) * np.concatenate(
-            (click_position, click_motion)).astype(np.float32)
+        action = np.concatenate((click_from, click_to)).astype(np.float32)
         if any(np.isnan(action)):
           raise ValueError
         self._action_space.action_spec().validate(action)
@@ -239,19 +241,18 @@ class HumanEmbodiedAgent(object):
   def help(self):
     logging.info('Use WASD/arrow keys to move, hold Space to carry.')
 
-  def callbacks(self):
-    """Get the matplotlib callbacks required by the agent."""
+  def register_callbacks(self, ui):
+    """Register the matplotlib callbacks required by the agent."""
 
     def _onkeypress(event):
       if event.key in HumanEmbodiedAgent.MOTION_KEY_TO_ACTION:
         self._movement = HumanEmbodiedAgent.MOTION_KEY_TO_ACTION[event.key]
       elif event.key == ' ':
         self._carry = True
-      elif event.key == 'escape':
-        plt.close('all')
-        sys.exit()
       else:
         self.help()
+
+    ui.register_callback('key_press_event', _onkeypress)
 
     def _onkeyrelease(event):
       if event.key == ' ':
@@ -259,7 +260,7 @@ class HumanEmbodiedAgent(object):
       elif event.key in HumanEmbodiedAgent.MOTION_KEY_TO_ACTION:
         self._movement = None
 
-    return {'key_press_event': _onkeypress, 'key_release_event': _onkeyrelease}
+    ui.register_callback('key_release_event', _onkeyrelease)
 
   def begin_episode(self):
     logging.info('Starting episode')
@@ -317,19 +318,17 @@ def setup_run_ui(env_config, render_size, task_hsv_colors, anti_aliasing):
           renderers.Success()
   }
   env = environment.Environment(**env_config)
-  demo = MatplotlibUI()
-
-  for event_name, callback in agent.callbacks().items():
-    demo.register_callback(event_name, callback)
+  ui = MatplotlibUI()
+  agent.register_callbacks(ui)
 
   # Start RL loop
   timestep = env.reset()
-  demo.update(timestep, action=None)
+  ui.update(timestep, action=None)
 
   while True:
     action = agent.step(timestep)
     timestep = env.step(action)
     if isinstance(env_config['action_space'], action_spaces.DragAndDrop):
-      demo.update(timestep, action)
+      ui.update(timestep, action)
     else:
-      demo.update(timestep, None)
+      ui.update(timestep, None)

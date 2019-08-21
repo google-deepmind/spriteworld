@@ -62,20 +62,20 @@ class PilRendererTest(absltest.TestCase):
     renderer = pil_renderer.PILRenderer(image_size=(16, 16), anti_aliasing=5)
     image = renderer.render(self._get_sprites())
 
-    self.assertSequenceEqual(list(image[4, 9]), [0, 0, 0])
-    self.assertSequenceEqual(list(image[6, 9]), [255, 0, 0])
+    self.assertSequenceEqual(list(image[4, 6]), [0, 0, 0])
+    self.assertSequenceEqual(list(image[6, 6]), [255, 0, 0])
     # Python2 and Python3 give slightly different anti-aliasing, so we specify
     # bounds for border values:
-    self.assertTrue(all(image[5, 9] >= [50, 0, 0]))
-    self.assertTrue(all(image[5, 9] <= [120, 30, 0]))
-    self.assertTrue(all(image[7, 9] >= [200, 0, 0]))
-    self.assertTrue(all(image[7, 9] <= [255, 50, 0]))
+    self.assertTrue(all(image[5, 6] >= [50, 0, 0]))
+    self.assertTrue(all(image[5, 6] <= [120, 30, 0]))
+    self.assertTrue(all(image[7, 6] >= [200, 0, 0]))
+    self.assertTrue(all(image[7, 6] <= [255, 50, 0]))
 
     renderer = pil_renderer.PILRenderer(image_size=(16, 16), anti_aliasing=1)
     image = renderer.render(self._get_sprites())
-    self.assertSequenceEqual(list(image[4, 9]), [0, 0, 0])
-    self.assertSequenceEqual(list(image[6, 9]), [255, 0, 0])
-    self.assertSequenceEqual(list(image[7, 9]), [255, 0, 0])
+    self.assertSequenceEqual(list(image[4, 6]), [0, 0, 0])
+    self.assertSequenceEqual(list(image[6, 6]), [255, 0, 0])
+    self.assertSequenceEqual(list(image[7, 6]), [255, 0, 0])
 
   def testColorToRGB(self):
     s = sprite.Sprite(x=0.5, y=0.5, shape='square', c0=0.2, c1=0.5, c2=0.5)

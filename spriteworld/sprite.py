@@ -48,6 +48,9 @@ class Sprite(object):
   Sprites are simple shapes parameterized by a few factors (position, shape,
   angle, scale, color, velocity). They are the building blocks of Spriteworld,
   so every Spriteworld environment state is simple a collection of sprites.
+
+  We assume that (x, y) are in mathematical coordinates, i.e. (0, 0) is at the
+  lower-left of the frame.
   """
 
   def __init__(self,
