@@ -25,7 +25,7 @@ from setuptools import setup
 
 setup(
     name='spriteworld',
-    version='1.0.0',
+    version='1.0.1',
     description=('Spriteworld is a python-based reinforcement learning '
                  'environment consisting of a 2-dimensional arena with objects '
                  'that can be freely moved.'),
