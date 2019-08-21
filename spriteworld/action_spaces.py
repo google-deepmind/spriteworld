@@ -163,10 +163,10 @@ class Embodied(object):
         specs.DiscreteArray(num_values=4, dtype=np.int64),
     ]
     self.action_to_motion = {
-        0: np.array([0, -self._step_size]),
-        1: np.array([-self._step_size, 0]),
-        2: np.array([0, self._step_size]),
-        3: np.array([self._step_size, 0]),
+        0: np.array([0, self._step_size]),   # Up
+        1: np.array([-self._step_size, 0]),  # Left
+        2: np.array([0, -self._step_size]),  # Down
+        3: np.array([self._step_size, 0]),   # Right
     }
 
   def get_body_sprite(self, sprites):

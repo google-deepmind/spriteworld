@@ -35,7 +35,7 @@ from spriteworld import environment
 from spriteworld import renderers
 
 
-class DemoUI(object):
+class MatplotlibUI(object):
   """Class for visualising the environment based on Matplotlib."""
 
   def __init__(self):
@@ -85,7 +85,7 @@ class DemoUI(object):
   def _draw_observation(self, image, action):
     """Draw the latest observation."""
     self._ax_image.clear()
-    self._ax_image.imshow(image, interpolation='none')
+    self._ax_image.imshow(image, origin='lower', interpolation='none')
     self._ax_image.set_xticks([])
     self._ax_image.set_yticks([])
     if action is not None:
@@ -317,7 +317,7 @@ def setup_run_ui(env_config, render_size, task_hsv_colors, anti_aliasing):
           renderers.Success()
   }
   env = environment.Environment(**env_config)
-  demo = DemoUI()
+  demo = MatplotlibUI()
 
   for event_name, callback in agent.callbacks().items():
     demo.register_callback(event_name, callback)

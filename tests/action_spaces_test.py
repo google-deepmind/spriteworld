@@ -28,27 +28,22 @@ from spriteworld import sprite
 
 class SelectMoveTest(parameterized.TestCase):
 
-  @parameterized.parameters((np.array([0.5, 0.5, 0.2, 0.75]), 0.),
-                            (np.array([0.5, 0.5, 0.2, 0.75]), 0.2),
-                            (np.array([0.2, 0.3, 0.9, 0.05]), 0.2),
-                            (np.array([0.5, 0.5, 0.2, 0.75]), 0.5))
-  def testNoiseScale(self, action, noise_scale):
-    action_space = action_spaces.SelectMove(scale=0.1, noise_scale=noise_scale)
-    action_space.apply_noise_to_action(action)
-
-  @parameterized.parameters(
-      (1, np.array([0.5, 0.5, 0.2, 0.75]), np.array([-0.3, 0.25])),
-      (1, np.array([0.2, 0.5, 0.2, 0.75]), np.array([-0.3, 0.25])),
-      (0.5, np.array([0.2, 0.5, 0.2, 0.75]), np.array([-0.15, 0.125])))
+  @parameterized.named_parameters(
+      ('Motion', 1, np.array([0.5, 0.5, 0.2, 0.75]), (-0.3, 0.25)),
+      ('SameMotion', 1, np.array([0.2, 0.5, 0.2, 0.75]), (-0.3, 0.25)),
+      ('SmallerScale', 0.5, np.array([0.2, 0.5, 0.2, 0.75]), (-0.15, 0.125)),
+  )
   def testGetMotion(self, scale, action, true_motion):
     action_space = action_spaces.SelectMove(scale=scale)
     motion = action_space.get_motion(action)
     self.assertTrue(np.allclose(motion, true_motion, atol=1e-4))
 
-  @parameterized.parameters((1, np.array([0.5, 0.5, 0.2, 0.75]), 0., 0.),
-                            (1, np.array([0.5, 0.5, 0.2, 0.75]), 1., -0.39),
-                            (1, np.array([0.2, 0.3, 0.2, 0.75]), 1., -0.39),
-                            (0.5, np.array([0.5, 0.5, 0.2, 0.75]), 1., -0.195))
+  @parameterized.named_parameters(
+      ('NoCost', 1, np.array([0.5, 0.5, 0.2, 0.75]), 0., 0.),
+      ('Cost', 1, np.array([0.5, 0.5, 0.2, 0.75]), 1., -0.39),
+      ('SameCost', 1, np.array([0.2, 0.3, 0.2, 0.75]), 1., -0.39),
+      ('LowerCost', 0.5, np.array([0.5, 0.5, 0.2, 0.75]), 1., -0.195),
+  )
   def testMotionCost(self, scale, action, motion_cost, true_cost):
     action_space = action_spaces.SelectMove(
         scale=scale, motion_cost=motion_cost)
@@ -102,15 +97,24 @@ class SelectMoveTest(parameterized.TestCase):
     self.assertTrue(np.allclose(sprites[0].position, [1.1, 1.1], atol=1e-5))
     self.assertTrue(np.allclose(sprites[1].position, [0.35, 0.49], atol=1e-5))
 
+  @parameterized.named_parameters(
+      ('NoNoise', np.array([0.5, 0.5, 0.2, 0.75]), 0.),
+      ('Noise', np.array([0.5, 0.5, 0.2, 0.75]), 0.2),
+      ('NoiseOutOfBounds', np.array([0.2, 0.3, 0.9, 0.05]), 0.2),
+      ('HighNoise', np.array([0.5, 0.5, 0.2, 0.75]), 0.5))
+  def testNoiseScale(self, action, noise_scale):
+    action_space = action_spaces.SelectMove(scale=0.1, noise_scale=noise_scale)
+    action_space.apply_noise_to_action(action)
+
 
 class DragAndDropTest(parameterized.TestCase):
 
-  @parameterized.parameters(
-      (1, np.array([0.5, 0.5, 0.2, 0.75]), np.array([-0.3, 0.25])),
-      (1, np.array([0.2, 0.5, -0.2, -0.75]), np.array([-0.4, -1.25])),
-      (0.5, np.array([0.2, 0.5, 0.6, 0.3]), np.array([0.2, -0.1])),
-      (0.5, np.array([0.2, 0.5, -0.6, -0.3]), np.array([-0.4, -0.4])),
-      (0.5, np.array([0.0, 0.0, -0.2, -0.4]), np.array([-0.1, -0.2])))
+  @parameterized.named_parameters(
+      ('MoveUpRight', 1, np.array([0.5, 0.5, 0.75, 0.75]), (0.25, 0.25)),
+      ('MoveDownLeft', 1, np.array([0.2, 0.5, -0.2, -0.75]), (-0.4, -1.25)),
+      ('ScaledMove', 0.5, np.array([0.5, 0.5, 0.8, 0.8]), (0.15, 0.15)),
+      ('MoveEdge', 0.5, np.array([0.0, 0.0, -0.2, -0.4]), (-0.1, -0.2)),
+  )
   def testGetMotion(self, scale, action, true_motion):
     action_space = action_spaces.DragAndDrop(scale=scale)
     motion = action_space.get_motion(action)
@@ -166,28 +170,60 @@ class DragAndDropTest(parameterized.TestCase):
 
 class EmbodiedTest(parameterized.TestCase):
 
-  @parameterized.parameters(
-      (0.1, 0, np.array([0., -0.1])), (0.1, 1, np.array([-0.1, 0.])),
-      (0.1, 2, np.array([0., 0.1])), (0.1, 3, np.array([0.1, 0.])),
-      (0.5, 3, np.array([0.5, 0.])))
-  def testGetMotion(self, step_size, motion_action, true_motion):
+  @parameterized.named_parameters(
+      ('Up', 0, 0.1, (0., 0.1)),
+      ('Down', 2, 0.1, (0., -0.1)),
+      ('Left', 1, 0.1, (-0.1, 0.)),
+      ('Right', 3, 0.1, (0.1, 0.)),
+      ('MoreRight', 3, 0.5, (0.5, 0.)),
+  )
+  def testGetMotion(self, motion_action, step_size, true_motion):
     action_space = action_spaces.Embodied(step_size=step_size)
     motion = action_space.action_to_motion[motion_action]
     self.assertTrue(np.allclose(motion, true_motion, atol=1e-5))
 
-  @parameterized.parameters(
-      ([[0.5, 0.5], [0.2, 0.8]], (0, 2), [[0.5, 0.5], [0.2, 0.9]]),
-      ([[0.5, 0.5], [0.2, 0.8]], (1, 2), [[0.5, 0.5], [0.2, 0.9]]),
-      ([[0.5, 0.5], [0.45, 0.55]], (0, 2), [[0.5, 0.5], [0.45, 0.65]]),
-      ([[0.5, 0.5], [0.45, 0.55]], (1, 2), [[0.5, 0.6], [0.45, 0.65]]),
-      ([[0.5, 0.5], [0.45, 0.55]], (1, 3), [[0.6, 0.5], [0.55, 0.55]]),
-      ([[0.5, 0.5], [0.45, 0.55]], (1, 1), [[0.4, 0.5], [0.35, 0.55]]),
-      ([[0.5, 0.5], [0.45, 0.55]], (1, 0), [[0.5, 0.4], [0.45, 0.45]]),
-      ([[0.95, 0.02], [0.95, 0.05]], (1, 3), [[1., 0.02], [1., 0.05]]),
-      ([[0.95, 0.02], [0.95, 0.05]],
-       (1, 3), [[1.05, 0.02], [1.05, 0.05]], False),
-      ([[0.45, 0.55], [0.5, 0.5], [0.45, 0.55]],
-       (1, 3), [[0.45, 0.55], [0.6, 0.5], [0.55, 0.55]]),
+  @parameterized.named_parameters(
+      dict(
+          testcase_name='Up',
+          init_positions=[[0.5, 0.5], [0.2, 0.8]],
+          action=(0, 0),
+          final_positions=[[0.5, 0.5], [0.2, 0.9]]),
+      dict(
+          testcase_name='UpCarry',
+          init_positions=[[0.5, 0.5], [0.2, 0.8]],
+          action=(1, 0),
+          final_positions=[[0.5, 0.5], [0.2, 0.9]]),
+      dict(
+          testcase_name='RightCarry',
+          init_positions=[[0.5, 0.5], [0.45, 0.55]],
+          action=(1, 3),
+          final_positions=[[0.6, 0.5], [0.55, 0.55]]),
+      dict(
+          testcase_name='LeftCarry',
+          init_positions=[[0.5, 0.5], [0.45, 0.55]],
+          action=(1, 1),
+          final_positions=[[0.4, 0.5], [0.35, 0.55]]),
+      dict(
+          testcase_name='DownCarry',
+          init_positions=[[0.5, 0.5], [0.45, 0.55]],
+          action=(1, 2),
+          final_positions=[[0.5, 0.4], [0.45, 0.45]]),
+      dict(
+          testcase_name='StayInBounds',
+          init_positions=[[0.95, 0.02], [0.95, 0.05]],
+          action=(1, 3),
+          final_positions=[[1., 0.02], [1., 0.05]]),
+      dict(
+          testcase_name='GoOutOfBound',
+          init_positions=[[0.95, 0.02], [0.95, 0.05]],
+          action=(1, 3),
+          final_positions=[[1.05, 0.02], [1.05, 0.05]],
+          keep_in_frame=False),
+      dict(
+          testcase_name='MoveCorrectEmbodied',
+          init_positions=[[0.45, 0.55], [0.5, 0.5], [0.45, 0.55]],
+          action=(1, 3),
+          final_positions=[[0.45, 0.55], [0.6, 0.5], [0.55, 0.55]]),
   )
   def testMoveSprites(self,
                       init_positions,
