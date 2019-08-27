@@ -24,7 +24,7 @@ from spriteworld import renderers as spriteworld_renderers
 
 
 def action_space():
-  return action_spaces.SelectMove(scale=0.25, noise_scale=0.05)
+  return action_spaces.SelectMove(scale=0.25)
 
 
 def renderers():
