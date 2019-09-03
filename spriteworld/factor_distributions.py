@@ -105,8 +105,8 @@ class Continuous(AbstractDistribution):
   def contains(self, spec):
     """Check if spec[self.key] is in [self.minval, self.maxval)."""
     if self.key not in spec:
-      raise ValueError('key {} is not in spec {}, but must be to evaluate '
-                       'containment.'.format(self.key, spec))
+      raise KeyError('key {} is not in spec {}, but must be to evaluate '
+                     'containment.'.format(self.key, spec))
     else:
       return spec[self.key] >= self.minval and spec[self.key] < self.maxval
 
@@ -351,6 +351,59 @@ class SetMinus(AbstractDistribution):
          (indent + 1) * '  ' + 'base=\n{},\n' +
          (indent + 1) * '  ' + 'hold_out=\n{}>').format(
              self.base.to_str(indent + 2), self.hold_out.to_str(indent + 2))
+    return s
+
+  @property
+  def keys(self):
+    return self._keys
+
+
+class Selection(AbstractDistribution):
+  """Filter a source distribution."""
+
+  def __init__(self, base, filtering):
+    """Construct selection of a base distribution given a filter.
+
+    Given a base Distribution and a filter Distribution, returns samples of
+    the base which are compatible with the filter.
+
+    This is related to Intersection, but does not expect the base and filters
+    to have the same keys. Instead, the filters should be subsets of the base.
+    This is the same as SetMinus, except the filter accepts instead of rejects
+    samples.
+
+    Args:
+      base: Distribution from which candidate samples are drawn.
+      filtering: Distribution used to select samples from base.
+    """
+    self.base = base
+    self.filtering = filtering
+
+    self._keys = base.keys
+    if not filtering.keys.issubset(self._keys):
+      raise ValueError(
+          'Keys {} of filtering is not a subset of keys {} of Selection base '
+          'distribution.'.format(filtering.keys, base.keys))
+
+  def sample(self, rng=None):
+    rng = self._get_rng(rng)
+    tries = 0
+    while tries < _MAX_TRIES:
+      tries += 1
+      sample = self.base.sample(rng=rng)
+      if self.filtering.contains(sample):
+        return sample
+    raise ValueError(
+        'Maximum number of tried exceeded when trying to sample from {}.'
+        .format(str(self)))
+
+  def contains(self, spec):
+    return self.base.contains(spec) and self.filtering.contains(spec)
+
+  def to_str(self, indent):
+    s = (indent * '  ' + '<Selection:\n' + (indent + 1) * '  ' +
+         'base=\n{},\n' + (indent + 1) * '  ' + 'filtering=\n{}>').format(
+             self.base.to_str(indent + 2), self.filtering.to_str(indent + 2))
     return s
 
   @property

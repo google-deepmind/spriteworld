@@ -29,9 +29,18 @@ def test_sampling_and_containment(test_object, d, contained, not_contained):
   for _ in range(5):
     test_object.assertTrue(d.contains(d.sample()))
   for contained_spec in contained:
-    test_object.assertTrue(d.contains(contained_spec))
+    try:
+      contained = d.contains(contained_spec)
+    except KeyError:
+      # Having the wrong keys also indicate it is not contained.
+      contained = False
+    test_object.assertTrue(contained)
   for not_contained_spec in not_contained:
-    test_object.assertFalse(d.contains(not_contained_spec))
+    try:
+      contained = d.contains(not_contained_spec)
+    except KeyError:
+      contained = False
+    test_object.assertFalse(contained)
 
 
 class ContinuousTest(parameterized.TestCase):
@@ -78,15 +87,15 @@ class MixtureTest(parameterized.TestCase):
   """Runs tests for Mixture of distributions."""
 
   @parameterized.named_parameters(
-      ('disjoint_continuous', distribs.Continuous(
+      ('DisjointContinuous', distribs.Continuous(
           'x', 0, 1), distribs.Continuous('x', 2, 3), [0.5, 2.5], [1.5, 3.5]),
-      ('overlapping_continuous', distribs.Continuous(
+      ('OverlappingContinuous', distribs.Continuous(
           'x', 0, 2), distribs.Continuous('x', 1, 3), [0.5, 2.5], [-0.5, 3.5]),
-      ('disjoint_discrete', distribs.Discrete(
+      ('DisjointDiscrete', distribs.Discrete(
           'x', [0, 1]), distribs.Discrete('x', [2, 3]), [1, 2], [-1, 4]),
-      ('overlapping_discrete', distribs.Discrete(
+      ('OverlappingDiscrete', distribs.Discrete(
           'x', [0, 1]), distribs.Discrete('x', [1, 2]), [0, 1, 2], [-1, 3]),
-      ('continuous_discrete', distribs.Continuous(
+      ('ContinuousDiscrete', distribs.Continuous(
           'x', 0, 2), distribs.Discrete('x', [1, 3]), [0.5, 3], [2.5]),
   )
   def testSamplingContainmentMixtureTwo(self, c_0, c_1, contained,
@@ -132,11 +141,11 @@ class IntersectionTest(parameterized.TestCase):
   """Runs tests for Intersection of distributions."""
 
   @parameterized.named_parameters(
-      ('continuous_continuous', distribs.Continuous(
+      ('ContinuousContinuous', distribs.Continuous(
           'x', 0, 2), distribs.Continuous('x', 1, 3), [1.5], [0.5, 2.5]),
-      ('discrete_discrete', distribs.Discrete(
+      ('DiscreteDiscrete', distribs.Discrete(
           'x', [0, 1]), distribs.Discrete('x', [1, 2]), [1], [0, 2]),
-      ('discrete_continuous', distribs.Discrete(
+      ('DiscreteContinuous', distribs.Discrete(
           'x', [1, 3]), distribs.Continuous('x', 0, 2), [1], [0.5, 1.5, 3]),
   )
   def testSamplingContainmentIntersectionTwo(self, d_0, d_1, contained,
@@ -176,12 +185,95 @@ class IntersectionTest(parameterized.TestCase):
       d = distribs.Intersection((d_0, d_1), index_for_sampling=0)
       d.sample()
 
+  def testKeys(self):
+    d_0 = distribs.Product(
+        (distribs.Continuous('x', 0, 2), distribs.Continuous('y', 0, 1)))
+    d_1 = distribs.Product(
+        (distribs.Continuous('x', 0, 1), distribs.Continuous('y', 0, 0.5)))
+    d_2 = distribs.Continuous('x', 0.4, 0.6)
+
+    distribs.Intersection((d_0, d_1))
+    with self.assertRaises(ValueError):
+      distribs.Intersection((d_0, d_2))
+
+
+class SelectionTest(parameterized.TestCase):
+  """Runs tests for Selection of distributions."""
+
+  @parameterized.named_parameters(
+      (
+          'Continuous',
+          distribs.Continuous('x', 0, 2),
+          distribs.Continuous('x', 1, 3),
+          [{
+              'x': 1.5
+          }],
+          [{
+              'x': 0.5
+          }, {
+              'x': 2.5
+          }],
+      ),
+      (
+          'Discrete',
+          distribs.Discrete('x', [0, 1]),
+          distribs.Discrete('x', [1, 2]),
+          [{
+              'x': 1
+          }],
+          [{
+              'x': 0
+          }, {
+              'x': 2
+          }],
+      ),
+      (
+          'MultiDimensional',
+          distribs.Product(
+              (distribs.Discrete('x', [1, 2]), distribs.Discrete('y', [3, 4]))),
+          distribs.Discrete('x', [2]),
+          [{
+              'x': 2,
+              'y': 3
+          }],
+          [{
+              'x': 1,
+              'y': 3
+          }, {
+              'x': 2
+          }, {
+              'x': 2,
+              'y': 5
+          }],
+      ),
+  )
+  def testSamplingContainmentSelection(self, d_base, d_filter, contained,
+                                       not_contained):
+    d = distribs.Selection(d_base, d_filter)
+    test_sampling_and_containment(self, d, contained, not_contained)
+
+  def testRaisesErrorFailedSampling(self):
+    d_base = distribs.Continuous('x', 0, 1)
+    d_filter = distribs.Continuous('x', 2, 3)
+    d = distribs.Selection(d_base, d_filter)
+    with self.assertRaises(ValueError):
+      d.sample()
+
+  def testKeys(self):
+    d_base = distribs.Product(
+        (distribs.Continuous('x', 0, 2), distribs.Continuous('y', 0, 1)))
+    d_filter_1 = distribs.Continuous('x', 0, 1)
+    d_filter_2 = distribs.Continuous('z', 0.4, 0.6)
+    distribs.Selection(d_base, d_filter_1)
+    with self.assertRaises(ValueError):
+      distribs.Selection(d_base, d_filter_2)
+
 
 class ProductTest(parameterized.TestCase):
   """Runs tests for Product of distributions."""
 
   @parameterized.named_parameters(
-      ('continuous_continuous', distribs.Continuous(
+      ('ContinuousContinuous', distribs.Continuous(
           'x', 0, 2), distribs.Continuous('y', 1, 3), [{
               'x': 0.5,
               'y': 2.5
@@ -195,7 +287,7 @@ class ProductTest(parameterized.TestCase):
               'x': 2.5,
               'y': 1.5
           }]),
-      ('discrete_discrete', distribs.Discrete(
+      ('DiscreteDiscrete', distribs.Discrete(
           'x', [0, 1]), distribs.Discrete('y', [1, 2]), [{
               'x': 0,
               'y': 2
@@ -209,7 +301,7 @@ class ProductTest(parameterized.TestCase):
               'x': 2,
               'y': 2
           }]),
-      ('discrete_continuous', distribs.Discrete(
+      ('DiscreteContinuous', distribs.Discrete(
           'x', [1, 3]), distribs.Continuous('y', 0, 2), [{
               'x': 1,
               'y': 1
@@ -264,13 +356,13 @@ class SetMinusTest(parameterized.TestCase):
   """Runs tests for SetMinus of distributions."""
 
   @parameterized.named_parameters(
-      ('continuous_continuous', distribs.Continuous(
+      ('ContinuousContinuous', distribs.Continuous(
           'x', 0, 2), distribs.Continuous('x', 1, 3), [0.5], [1.5]),
-      ('discrete_discrete', distribs.Discrete(
+      ('DiscreteDiscrete', distribs.Discrete(
           'x', [0, 1]), distribs.Discrete('x', [1, 2]), [0], [1]),
-      ('discrete_continuous', distribs.Discrete(
+      ('DiscreteContinuous', distribs.Discrete(
           'x', [1, 3]), distribs.Continuous('x', 0, 2), [3], [1]),
-      ('continuous_discrete', distribs.Continuous(
+      ('ContinuousDiscrete', distribs.Continuous(
           'x', 0, 2), distribs.Discrete('x', [1, 3]), [0.5, 1.5], [1]),
   )
   def testSamplingContainmentSetMinusTwo(self, d_0, d_1, contained,
