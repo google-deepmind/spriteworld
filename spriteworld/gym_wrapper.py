@@ -20,7 +20,7 @@ from __future__ import print_function
 
 from dm_env import specs
 from gym import spaces
-from gym.core import Env as gym_env
+from gym.core import Env as gym_default_env
 import numpy as np
 
 
@@ -54,7 +54,6 @@ class GymWrapper(object):
     self._last_render = None
     self._action_space = None
     self._observation_space = None
-    self._reward_range = None
 
     # Reset Spriteworld to setup the observation_specs correctly
     self._env.reset()
@@ -80,12 +79,8 @@ class GymWrapper(object):
 
   @property
   def reward_range(self):
-    if self._reward_range is None:
-      if hasattr(self, '_task') and hasattr(self._task, '_reward_range'):
-        self._reward_range = (-self._task._reward_range, 0)
-      else:
-        self._reward_range = gym_env.reward_range  # (-float('inf'), float('inf'))
-    return self._reward_range
+    # in general, self._task doesn't specify the limits of rewards
+    return gym_default_env.reward_range  # (-float('inf'), float('inf'))
 
   def _process_obs(self, obs):
     """Convert and processes observations."""
