@@ -212,7 +212,7 @@ class Clustering(AbstractTask):
     # Ignore objects unassigned to any cluster
     positions = positions[cluster_assignments >= 0]
     cluster_assignments = cluster_assignments[cluster_assignments >= 0]
-    return 1. / metrics.davies_bouldin_score(positions, cluster_assignments)
+    return 1. / np.maximum(0.01, metrics.davies_bouldin_score(positions, cluster_assignments))
 
   def reward(self, sprites):
     """Calculate reward from sprites.
